@@ -58,5 +58,6 @@ android {
 dependencies {
     implementation project(path: ':java-core')
     implementation project(path: ':android')
+	implementation 'com.squareup.okio:okio:2.10.0'
 }
 

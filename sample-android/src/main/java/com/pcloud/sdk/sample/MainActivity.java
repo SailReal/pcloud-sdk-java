@@ -24,10 +24,20 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import com.pcloud.sdk.ApiClient;
+import com.pcloud.sdk.ApiError;
+import com.pcloud.sdk.Authenticators;
 import com.pcloud.sdk.AuthorizationActivity;
 import com.pcloud.sdk.AuthorizationData;
 import com.pcloud.sdk.AuthorizationRequest;
 import com.pcloud.sdk.AuthorizationResult;
+import com.pcloud.sdk.DataSource;
+import com.pcloud.sdk.PCloudSdk;
+import com.pcloud.sdk.RemoteFolder;
+
+import java.io.IOException;
+import java.util.Date;
+import java.util.UUID;
 
 public class MainActivity extends Activity {
 
@@ -53,7 +63,7 @@ public class MainActivity extends Activity {
                         MainActivity.this,
                         AuthorizationRequest.create()
                                 .setType(AuthorizationRequest.Type.TOKEN)
-                                .setClientId("mdBPN4QVGE")
+                                .setClientId("XTsnFgtbuxH")
                                 .setForceAccessApproval(true)
                                 .addPermission("manageshares")
                                 .build());
@@ -66,16 +76,40 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PCLOUD_AUTHORIZATION_REQUEST_CODE) {
-            AuthorizationData authData = AuthorizationActivity.getResult(data);
+            final AuthorizationData authData = AuthorizationActivity.getResult(data);
             AuthorizationResult result = authData.result;
             authorizationResultView.setText(result.name());
 
             switch (result) {
                 case ACCESS_GRANTED:
-                    //TODO: Do what's needed :)
                     apiKeyView.setText(authData.toString());
-                    Log.d("pCloud", "Account access granted, authData:\n" + authData);
-                    break;
+
+					Thread thread = new Thread(new Runnable() {
+						@Override
+						public void run() {
+							try  {
+								try {
+									ApiClient apiClient = PCloudSdk.newClientBuilder()
+											.authenticator(Authenticators.newOAuthAuthenticator(authData.token))
+											.create();
+
+									byte[] fileContents = "fooooooooo".getBytes();
+
+									apiClient.createFile(RemoteFolder.ROOT_FOLDER_ID, "foopo.txt", DataSource.create(fileContents)).execute();
+								} catch (IOException e) {
+									e.printStackTrace();
+								} catch (ApiError apiError) {
+									apiError.printStackTrace();
+								}
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+					});
+
+					thread.start();
+
+					break;
                 case ACCESS_DENIED:
                     //TODO: Add proper handling for denied grants.
                     Log.d("pCloud", "Account access denied");
